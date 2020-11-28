@@ -4,6 +4,10 @@ from platform import *
 from levelGenerator import LevelGenerator
 import pygame_menu
 from menuTheme import menuTheme
+import json
+import os.path as op
+
+file_path = "./stats/bestScore.json"
 
 
 class MainGame:
@@ -26,7 +30,7 @@ class MainGame:
         self.hero = hero
         self.timer = pygame.time.Clock()
         self.up = self.left = self.right = False
-
+        self.bestScore = self.readBestScore()
         self.menu = self.createMainMenu(winWidth, winHeight)
 
     def startGame(self):
@@ -40,6 +44,7 @@ class MainGame:
                                 theme=menuTheme)
         menu.add_button('Start', self.mainLoop)
         menu.add_button('Exit', pygame_menu.events.EXIT)
+        menu.add_label(f"Best: {self.bestScore} sec", "label1")
 
         return menu
 
@@ -80,7 +85,6 @@ class MainGame:
                 self.hero.moveSpeed = 2
 
             seconds = round((pygame.time.get_ticks() - startTick) / 1000)
-            pygame.display.set_caption(f"Go away, fps {round(self.timer.get_fps())}")
 
             if seconds != lastSecond and self.gameStarted:
                 self.fallSpeed += 0.0005
@@ -93,19 +97,27 @@ class MainGame:
             self.hero.update(self.left, self.right, self.up, self.platforms)
             self.moveLocation()
 
-            for b in self.bonuses:
-                if sprite.collide_rect(self.hero, b):
-                    self.hero.moveSpeed, self.fallSpeed = b.getBuff(self.hero.moveSpeed,
-                                                                    self.fallSpeed)
-                    b.remove(self.entities)
-                    self.bonuses.remove(b)
+            self.checkBonuses()
 
             if self.hero.rect.y > self.winHeight:
+                if self.bestScore < seconds:
+                    self.bestScore = seconds
+                    self.writeBestScore()
+                    label = self.menu.get_widget("label1", True)
+                    label._title = f"Best: {self.bestScore} sec"
                 run = False
 
             self.screen.blit(pygame.font.SysFont("Comic sans ms", 14).render(f"Seconds {seconds}", True, (90, 52, 145)),
-                                                (0, 0))
+                             (0, 0))
             pygame.display.update()
+
+    def checkBonuses(self):
+        for b in self.bonuses:
+            if sprite.collide_rect(self.hero, b):
+                self.hero.moveSpeed, self.fallSpeed = b.getBuff(self.hero.moveSpeed,
+                                                                self.fallSpeed)
+                b.remove(self.entities)
+                self.bonuses.remove(b)
 
     def moveLocation(self):
         generate = True
@@ -140,3 +152,20 @@ class MainGame:
                 self.right = False
             if e.type == KEYUP and e.key == K_a:
                 self.left = False
+
+    def readBestScore(self):
+        if op.exists(file_path):
+            with open(file_path, 'r') as file:
+                jsonDict = json.load(file)
+                if jsonDict['BestScore']:
+                    try:
+                        bestScore = int(jsonDict['BestScore'])
+                    except:
+                        bestScore = 0
+        else:
+            bestScore = 0
+        return bestScore
+
+    def writeBestScore(self):
+        with open(file_path, 'w') as file:
+            json.dump({"BestScore": self.bestScore}, file)
