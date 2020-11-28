@@ -2,16 +2,22 @@ import pygame
 from player import Player
 from platform import *
 from levelGenerator import LevelGenerator
+import pygame_menu
+from menuTheme import menuTheme
 
 
 class MainGame:
 
     def __init__(self, winWidth: int, winHeight: int, hero: Player, windowName: str):
+        self.gameStarted = False
         self.winWidth = winWidth
         self.winHeight = winHeight
         self.display = (winWidth, winHeight)
+        self.bg = pygame.image.load("sprites/background.png")
+        self.bg = pygame.transform.scale(self.bg, self.display)
         self.fallSpeed = 1
         pygame.init()
+        self.bgsound = pygame.mixer.Sound("music/background.mp3")
         self.screen = pygame.display.set_mode(self.display)
         pygame.display.set_caption(windowName)
         self.platforms = []
@@ -19,38 +25,71 @@ class MainGame:
         self.entities = pygame.sprite.Group()
         self.hero = hero
         self.timer = pygame.time.Clock()
-        self.gameStarted = False
         self.up = self.left = self.right = False
 
+        self.menu = self.createMainMenu(winWidth, winHeight)
+
     def startGame(self):
+        self.bgsound.set_volume(0.1)
+        self.bgsound.play(-1)
+        self.menu.mainloop(self.screen)
+
+    def createMainMenu(self, w, h):
+        menu = pygame_menu.Menu(h, w,
+                                title="Main menu",
+                                theme=menuTheme)
+        menu.add_button('Start', self.mainLoop)
+        menu.add_button('Exit', pygame_menu.events.EXIT)
+
+        return menu
+
+    def resetAll(self, entites: pygame.sprite.Group,
+                 platfroms: list,
+                 bonuses: list):
+        for e in entites:
+            e.remove(entites)
+
+        platfroms.clear()
+        bonuses.clear()
+        self.up = self.left = self.right = False
+        self.gameStarted = False
+        self.fallSpeed = 1
+        self.hero.resetStats()
+
+    def mainLoop(self):
+        self.resetAll(self.entities, self.platforms, self.bonuses)
         self.entities.add(self.hero)
-        pic = pygame.image.load("sprites/background.png")
-        pic = pygame.transform.scale(pic, self.display)
 
         level = LevelGenerator.generateLevelPattern(12, 9, True)
 
         LevelGenerator.platformStartLocation(level, self.entities, self.platforms, self.bonuses)
-
-        startTick = pygame.time.get_ticks()
-        lastSecond = 0
-
         run = True
 
+        startTick = 0
+        lastSecond = 0
+
         while run:
+
+            if not self.gameStarted:
+                startTick = pygame.time.get_ticks()
+                lastSecond = 0
+
             if self.fallSpeed < 1:
                 self.fallSpeed = 1
             if self.hero.moveSpeed < 2:
                 self.hero.moveSpeed = 2
-            seconds = (pygame.time.get_ticks() - startTick) / 1000
-            pygame.display.set_caption(f"Go away, fps {round(self.timer.get_fps())}, {seconds}")
-            if round(seconds) != lastSecond and self.gameStarted:
+
+            seconds = round((pygame.time.get_ticks() - startTick) / 1000)
+            pygame.display.set_caption(f"Go away, fps {round(self.timer.get_fps())}")
+
+            if seconds != lastSecond and self.gameStarted:
                 self.fallSpeed += 0.0005
                 self.hero.moveSpeed += 0.0005
                 lastSecond += round(seconds)
 
             self.timer.tick(60)
             self.eventHandler()
-            self.screen.blit(pic, (0, 0))
+            self.screen.blit(self.bg, (0, 0))
             self.hero.update(self.left, self.right, self.up, self.platforms)
             self.moveLocation()
 
@@ -64,6 +103,8 @@ class MainGame:
             if self.hero.rect.y > self.winHeight:
                 run = False
 
+            self.screen.blit(pygame.font.SysFont("Comic sans ms", 14).render(f"Seconds {seconds}", True, (90, 52, 145)),
+                                                (0, 0))
             pygame.display.update()
 
     def moveLocation(self):

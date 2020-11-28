@@ -131,3 +131,10 @@ class Player(sprite.Sprite):
                 if yVel < 0:
                     self.rect.top = p.rect.bottom
                     self.yVel = 0
+
+    def resetStats(self):
+        self.rect.x = self.startX
+        self.rect.y = self.startY
+        self.moveSpeed = 5
+        self.yVel = 0
+        self.xVel = 0
