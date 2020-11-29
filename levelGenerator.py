@@ -1,5 +1,5 @@
 from platform import *
-from random import choice, randint
+from random import choice, randint, shuffle
 from bonusSpeedDown import BonusSpeedDown
 from bonusSpeedUp import BonusSpeedUp
 
@@ -7,85 +7,73 @@ from bonusSpeedUp import BonusSpeedUp
 class LevelGenerator:
 
     @staticmethod
-    def generateLinePattern(length: int):
+    def generateStartLevel(lineCount, entities, platforms, bonuses):
+        startLevel = [[], [], [], [' ', ' ', ' ', ' ', '-', ' ', ' ', ' ', ' ']]
 
+        while lineCount - 1:
+            startLevel.insert(0, LevelGenerator.generateLinePattern(9))
+
+            if not lineCount == 2:
+                space = 3
+            else:
+                space = 2
+            for i in range(space):
+                startLevel.insert(0, [])
+
+            lineCount -= 1
+
+        y = 0
+        print(startLevel)
+        for i in startLevel:
+            if not i == []:
+                LevelGenerator.generateObjects(i, y, entities, platforms, bonuses)
+            y += BHEIGHT
+
+    @staticmethod
+    def generateLinePattern(length: int):
         allBlocks = [' ', '-']
         allBonuses = ['/', '+']
-
-        string = ""
+        line = []
         maxBlocks = 3
         maxBonuses = 1
 
-        for i in range(length):
+        while len(line) != length:
             block = choice(allBlocks)
-            if maxBlocks > 0 and block == "-":
-                string += block
+            if maxBlocks and block == "-":
                 maxBlocks -= 1
-            elif block != '-':
-                string += block
-
-            if maxBonuses > 0 and randint(0, 100) == 25:
-                string += choice(allBonuses)
+                line.append(block)
+            elif maxBonuses and randint(0, 100) == 25:
+                line.append(choice(allBonuses))
                 maxBonuses -= 1
+            elif block != "-":
+                line.append(block)
 
-        if string.count("-") <= 2:
-            string = LevelGenerator.generateLinePattern(length)
+        if line.count('-') <= 2:
+            line = LevelGenerator.generateLinePattern(length)
 
-        print(string)
-        return string
-
-    @staticmethod
-    def generateLevelPattern(count: int, length: int, isStart: bool):
-        if isStart:
-            level = ["    -    "]
-        else:
-            level = []
-
-        while count:
-            if len(level) % 4 == 0:
-                level.insert(0, LevelGenerator.generateLinePattern(length))
-            else:
-                level.insert(0, "         ")
-            count -= 1
-
-        return level
+        shuffle(line)
+        print(line)
+        return line
 
     @staticmethod
-    def addLine(length: int, entities, platforms, bonuses):
+    def generateNewRow(length, entities, platforms, bonuses):
         line = LevelGenerator.generateLinePattern(length)
+        LevelGenerator.generateObjects(line, -BHEIGHT, entities, platforms, bonuses)
+
+    @staticmethod
+    def generateObjects(linePattern, y, entities, platforms, bonuses):
         x = 0
-        for ch in line:
-            if ch == "-":
-                pf = Platform(x, -BHEIGHT)
+        for block in linePattern:
+            if block == "-":
+                pf = Platform(x, y)
                 platforms.append(pf)
                 entities.add(pf)
-            elif ch == "/":
-                bonus = BonusSpeedDown(x, -BHEIGHT)
+            elif block == "/":
+                bonus = BonusSpeedDown(x, y)
                 bonuses.append(bonus)
                 entities.add(bonus)
-            elif ch == "+":
-                bonus = BonusSpeedUp(x, -BHEIGHT)
+            elif block == "+":
+                bonus = BonusSpeedUp(x, y)
                 bonuses.append(bonus)
                 entities.add(bonus)
             x += BWIDTH
-
-    @staticmethod
-    def platformStartLocation(levelPattern, entities, platforms, bonuses):
-        x = y = 0
-        for row in levelPattern:
-            for ch in row:
-                if ch == "-":
-                    pf = Platform(x, y)
-                    entities.add(pf)
-                    platforms.append(pf)
-                elif ch == "/":
-                    bonus = BonusSpeedDown(x, -y)
-                    bonuses.append(bonus)
-                    entities.add(bonus)
-                elif ch == "+":
-                    bonus = BonusSpeedUp(x, -y)
-                    bonuses.append(bonus)
-                    entities.add(bonus)
-                x += BWIDTH
-            y += BHEIGHT
-            x = 0

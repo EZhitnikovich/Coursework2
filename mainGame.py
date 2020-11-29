@@ -65,9 +65,7 @@ class MainGame:
         self.resetAll(self.entities, self.platforms, self.bonuses)
         self.entities.add(self.hero)
 
-        level = LevelGenerator.generateLevelPattern(12, 9, True)
-
-        LevelGenerator.platformStartLocation(level, self.entities, self.platforms, self.bonuses)
+        LevelGenerator.generateStartLevel(4, self.entities, self.platforms, self.bonuses)
         run = True
 
         startTick = 0
@@ -78,11 +76,6 @@ class MainGame:
             if not self.gameStarted:
                 startTick = pygame.time.get_ticks()
                 lastSecond = 0
-
-            if self.fallSpeed < 1:
-                self.fallSpeed = 1
-            if self.hero.moveSpeed < 2:
-                self.hero.moveSpeed = 2
 
             seconds = round((pygame.time.get_ticks() - startTick) / 1000)
 
@@ -100,16 +93,19 @@ class MainGame:
             self.checkBonuses()
 
             if self.hero.rect.y > self.winHeight:
-                if self.bestScore < seconds:
-                    self.bestScore = seconds
-                    self.writeBestScore()
-                    label = self.menu.get_widget("label1", True)
-                    label._title = f"Best: {self.bestScore} sec"
+                self.checkScore(seconds)
                 run = False
 
             self.screen.blit(pygame.font.SysFont("Comic sans ms", 14).render(f"Seconds {seconds}", True, (90, 52, 145)),
                              (0, 0))
             pygame.display.update()
+
+    def checkScore(self, seconds):
+        if self.bestScore < seconds:
+            self.bestScore = seconds
+            self.writeBestScore()
+            label = self.menu.get_widget("label1", True)
+            label._title = f"Best: {self.bestScore} sec"
 
     def checkBonuses(self):
         for b in self.bonuses:
@@ -119,14 +115,19 @@ class MainGame:
                 b.remove(self.entities)
                 self.bonuses.remove(b)
 
+        if self.fallSpeed < 1:
+            self.fallSpeed = 1
+        if self.hero.moveSpeed < 2:
+            self.hero.moveSpeed = 2
+
     def moveLocation(self):
         generate = True
         for e in self.entities:
-            if isinstance(e, Platform) and e.rect.y > self.winHeight + BHEIGHT * 2:
+            if isinstance(e, Platform) and e.rect.y > self.winHeight:
                 e.remove(self.entities)
                 self.platforms.remove(e)
                 if generate:
-                    LevelGenerator.addLine(9, self.entities, self.platforms, self.bonuses)
+                    LevelGenerator.generateNewRow(9, self.entities, self.platforms, self.bonuses)
                     generate = False
 
             if self.gameStarted:
