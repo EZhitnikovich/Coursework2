@@ -5,9 +5,10 @@ from levelGenerator import LevelGenerator
 import pygame_menu
 from menuTheme import menuTheme
 import json
-import os.path as op
+import os
 
-file_path = "./stats/bestScore.json"
+dir_path = "./stats/"
+file_name = "bestScore.json"
 
 
 class MainGame:
@@ -155,8 +156,8 @@ class MainGame:
                 self.left = False
 
     def readBestScore(self):
-        if op.exists(file_path):
-            with open(file_path, 'r') as file:
+        if os.path.exists(dir_path + file_name):
+            with open(dir_path + file_name, 'r') as file:
                 jsonDict = json.load(file)
                 if jsonDict['BestScore']:
                     try:
@@ -168,5 +169,8 @@ class MainGame:
         return bestScore
 
     def writeBestScore(self):
-        with open(file_path, 'w') as file:
+        if not os.path.exists(dir_path):
+            os.mkdir(dir_path)
+
+        with open(dir_path + file_name, 'w') as file:
             json.dump({"BestScore": self.bestScore}, file)

@@ -23,7 +23,7 @@ class LevelGenerator:
             lineCount -= 1
 
         y = 0
-        print(startLevel)
+
         for i in startLevel:
             if not i == []:
                 LevelGenerator.generateObjects(i, y, entities, platforms, bonuses)
@@ -52,7 +52,6 @@ class LevelGenerator:
             line = LevelGenerator.generateLinePattern(length)
 
         shuffle(line)
-        print(line)
         return line
 
     @staticmethod
